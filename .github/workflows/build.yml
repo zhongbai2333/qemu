@@ -76,7 +76,7 @@ jobs:
       - name: Install Homebrew dependencies
         run: |
           brew update
-          brew install glib pixman pkg-config
+          brew install pixman
 
       - name: Out‑of‑tree Configure & Build
         run: |
@@ -142,10 +142,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub Release
+        if: github.ref_type == 'tag'
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
           name: QEMU Release ${{ github.ref }}
 
       - name: Download all build artifacts

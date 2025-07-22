@@ -1,0 +1,105 @@
+name: Build & Release QEMU
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - arm-softmmu         # 32-bit ARM
+          - aarch64-softmmu     # 64-bit ARM
+          - x86_64-softmmu      # 64-bit x86 (AMD64)
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install deps & build (Ubuntu ${{ matrix.target }})
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git gcc make pkg-config \
+            libglib2.0-dev libpixman-1-dev
+          ./configure --target-list=${{ matrix.target }}
+          make -j$(nproc)
+
+      - name: Upload artifact for ${{ matrix.target }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-${{ matrix.target }}
+          path: |
+            ${{ matrix.target == 'arm-softmmu' && 'qemu-system-arm' || '' }}
+            ${{ matrix.target == 'aarch64-softmmu' && 'qemu-system-aarch64' || '' }}
+            ${{ matrix.target == 'x86_64-softmmu' && 'qemu-system-x86_64' || '' }}
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install deps & build (macOS)
+        run: |
+          brew update
+          brew install glib pixman pkg-config
+          ./configure --target-list=arm-softmmu
+          make -j$(sysctl -n hw.logicalcpu)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qemu-macos
+          path: qemu-system-arm
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup MSYS2 & build (Windows)
+        uses: msys2/setup-msys2@v2
+        with:
+          install: base-devel gcc pkg-config
+      - run: |
+          ./configure --target-list=arm-softmmu
+          make -j%NUMBER_OF_PROCESSORS%
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qemu-windows
+          path: qemu-system-arm.exe
+
+  release:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: QEMU Release ${{ github.ref }}
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Upload Linux binaries (ARM32/ARM64/x86_64)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          asset_path: |
+            artifacts/qemu-arm-softmmu/qemu-system-arm
+            artifacts/qemu-aarch64-softmmu/qemu-system-aarch64
+            artifacts/qemu-x86_64-softmmu/qemu-system-x86_64
+
+      - name: Upload macOS binary
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          asset_path: qemu-system-arm
+
+      - name: Upload Windows binary
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          asset_path: qemu-system-arm.exe

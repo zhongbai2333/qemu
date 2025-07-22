@@ -106,12 +106,13 @@ jobs:
         with:
           update: true
           install: >
-            base-devel
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-glib2
-            mingw-w64-x86_64-pixman
-            mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-ninja
+            base-devel                              # 提供 make、gcc 等基础工具 :contentReference[oaicite:0]{index=0}
+            mingw-w64-x86_64-toolchain              # 包含 gcc、g++ 等编译器 :contentReference[oaicite:1]{index=1}
+            mingw-w64-x86_64-glib2                  # QEMU 依赖的 glib 库 :contentReference[oaicite:2]{index=2}
+            mingw-w64-x86_64-pixman                 # QEMU 依赖的 pixman 库 :contentReference[oaicite:3]{index=3}
+            mingw-w64-x86_64-pkg-config             # 用于检测 pkg-config 依赖 :contentReference[oaicite:4]{index=4}
+            mingw-w64-x86_64-ninja                  # 提供 Ninja，可供 Meson 调用 :contentReference[oaicite:5]{index=5}
+            mingw-w64-x86_64-git                    # 安装 Git，以便 Meson 下载 dtc.wrap 子项目 :contentReference[oaicite:6]{index=6}
 
       - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}

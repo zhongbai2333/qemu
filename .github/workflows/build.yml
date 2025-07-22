@@ -53,16 +53,31 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v3
-      - name: Setup MSYS2 & build (Windows)
-        uses: msys2/setup-msys2@v2
+
+      # 1. 安装并设置 MSYS2 环境
+      - uses: msys2/setup-msys2@v2
         with:
-          install: base-devel gcc pkg-config
-      - run: |
+          update: true
+          install: >
+            make
+            git
+            pkg-config
+            mingw-w64-i686-gcc     # 或者其他你需要的包
+
+      # 2. 使用 MSYS2 Bash（而非 PowerShell），并用 ‘nproc’ 获取核心数
+      - name: Configure & Build (Windows MSYS2)
+        shell: msys2 {0}                                         # ← 指定使用 MSYS2 环境的 Bash  
+        run: |
           ./configure --target-list=arm-softmmu
-          make -j%NUMBER_OF_PROCESSORS%
-      - uses: actions/upload-artifact@v4
+          # nproc 在 MSYS2 下返回可用核心数，可直接用于 -j 参数
+          make -j $(nproc)                                       
+
+      # 3. 上传产物
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
         with:
           name: qemu-windows
           path: qemu-system-arm.exe

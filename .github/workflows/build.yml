@@ -17,8 +17,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git gcc make pkg-config libglib2.0-dev libpixman-1-dev
           mkdir -p build
-          # 一次性编译 ARM32/ARM64/x86_64，并安装到 build/
-          ./configure --target-list=arm-softmmu,aarch64-softmmu,x86_64-softmmu \
+          ./configure --target-list=arm-softmmu \
                       --prefix=$PWD/build
           make -j$(nproc)
           make install
@@ -27,6 +26,35 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qemu-build-linux
+          path: build/
+
+  build-linux-arm64:
+    name: Build QEMU on GitHub-hosted ARM64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git gcc make pkg-config \
+            libglib2.0-dev libpixman-1-dev
+
+      - name: build all Linux targets
+        run: |
+          mkdir -p build
+          ./configure \
+            --target-list=arm-softmmu \
+            --prefix=$PWD/build
+          make -j$(nproc)
+          make install
+
+      - name: Upload build directory (ARM64 Linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-build-arm-hosted
           path: build/
 
   build-macos:

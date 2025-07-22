@@ -7,101 +7,123 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-linux:
+  build-linux-x86:
+    name: Build ARM32 QEMU on x86_64 Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install deps & build all Linux targets
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git gcc make pkg-config libglib2.0-dev libpixman-1-dev
-          mkdir -p build
-          ./configure --target-list=arm-softmmu \
-                      --prefix=$PWD/build
-          make -j$(nproc)
-          make install
-
-      - name: Upload build directory (Linux)
-        uses: actions/upload-artifact@v4
-        with:
-          name: qemu-build-linux
-          path: build/
-
-  build-linux-arm64:
-    name: Build QEMU on GitHub-hosted ARM64
-    runs-on: ubuntu-24.04-arm
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install deps
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git gcc make pkg-config \
             libglib2.0-dev libpixman-1-dev
 
-      - name: build all Linux targets
+      - name: Configure & build
         run: |
-          mkdir -p build
+          rm -rf build
+          mkdir build
           ./configure \
             --target-list=arm-softmmu \
             --prefix=$PWD/build
           make -j$(nproc)
           make install
 
-      - name: Upload build directory (ARM64 Linux)
+      - name: Upload ARM32 build (x86_64)
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-build-arm-hosted
+          name: qemu-linux-x86_arm
           path: build/
 
-  build-macos:
+  build-linux-arm64:
+    name: Build ARM32 QEMU on ARM64 Linux
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git gcc make pkg-config \
+            libglib2.0-dev libpixman-1-dev
+
+      - name: Configure & build
+        run: |
+          rm -rf build
+          mkdir build
+          ./configure \
+            --target-list=arm-softmmu \
+            --prefix=$PWD/build
+          make -j$(nproc)
+          make install
+
+      - name: Upload ARM32 build (ARM64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-linux-arm64_arm
+          path: build/
+
+  build-macos-arm:
+    name: Build ARM32 QEMU on macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install deps & build (macOS)
+      - name: Install Homebrew deps & build
         run: |
           brew update
           brew install glib pixman pkg-config
-          mkdir -p build
-          ./configure --target-list=arm-softmmu --prefix=$PWD/build
+          rm -rf build
+          mkdir build
+          ./configure \
+            --target-list=arm-softmmu \
+            --prefix=$PWD/build
           make -j$(sysctl -n hw.logicalcpu)
           make install
 
-      - name: Upload build directory (macOS)
+      - name: Upload ARM32 build (macOS)
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-build-macos
+          name: qemu-macos-arm
           path: build/
 
-  build-windows:
+  build-windows-arm:
+    name: Build ARM32 QEMU on Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
+
       - uses: msys2/setup-msys2@v2
         with:
           update: true
           install: make git pkg-config mingw-w64-i686-gcc
 
-      - name: Configure & Build (Windows MSYS2)
+      - name: Configure & build
         shell: msys2 {0}
         run: |
-          mkdir -p build
-          ./configure --target-list=arm-softmmu --prefix=$PWD/build
-          make -j $(nproc)
+          rm -rf build
+          mkdir build
+          ./configure \
+            --target-list=arm-softmmu \
+            --prefix=$PWD/build
+          make -j$(nproc)
           make install
 
-      - name: Upload build directory (Windows)
+      - name: Upload ARM32 build (Windows)
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-build-windows
+          name: qemu-windows-arm
           path: build/
 
   release:
-    needs: [build-linux, build-macos, build-windows]
+    name: Create Release & Upload Binaries
+    needs:
+      - build-linux-x86
+      - build-linux-arm64
+      - build-macos-arm
+      - build-windows-arm
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub Release
@@ -116,11 +138,12 @@ jobs:
         with:
           path: ./artifacts
 
-      - name: Upload combined build directories
+      - name: Upload all build directories
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref }}
           asset_path: |
-            artifacts/qemu-build-linux
-            artifacts/qemu-build-macos
-            artifacts/qemu-build-windows
+            artifacts/qemu-linux-x86_arm
+            artifacts/qemu-linux-arm64_arm
+            artifacts/qemu-macos-arm
+            artifacts/qemu-windows-arm

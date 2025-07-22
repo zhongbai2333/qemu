@@ -112,7 +112,7 @@ jobs:
             mingw-w64-x86_64-pixman
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-git
+            git
 
       - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}

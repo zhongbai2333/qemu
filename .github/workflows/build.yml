@@ -20,7 +20,7 @@ jobs:
             git gcc make pkg-config \
             libglib2.0-dev libpixman-1-dev
 
-      - name: Configure & build
+      - name: Out‑of‑tree Configure & Build
         run: |
           rm -rf build-linux-x86
           mkdir -p build-linux-x86
@@ -50,7 +50,7 @@ jobs:
             git gcc make pkg-config \
             libglib2.0-dev libpixman-1-dev
 
-      - name: Configure & build
+      - name: Out‑of‑tree Configure & Build
         run: |
           rm -rf build-linux-arm64
           mkdir -p build-linux-arm64
@@ -73,10 +73,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Homebrew deps & build
+      - name: Install Homebrew deps
         run: |
           brew update
           brew install glib pixman pkg-config
+
+      - name: Out‑of‑tree Configure & Build
+        run: |
           rm -rf build-macos-arm
           mkdir -p build-macos-arm
           cd build-macos-arm
@@ -98,12 +101,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: msys2/setup-msys2@v2
+      - name: Setup MSYS2 and install deps
+        uses: msys2/setup-msys2@v2
         with:
           update: true
-          install: make git pkg-config mingw-w64-i686-gcc
+          install: >
+            base-devel
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-glib2
+            mingw-w64-x86_64-pixman
+            mingw-w64-x86_64-pkg-config
 
-      - name: Configure & build (Windows MSYS2)
+      - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}
         run: |
           rm -rf build-windows-arm

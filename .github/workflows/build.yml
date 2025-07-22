@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install Homebrew deps
+      - name: Install Homebrew dependencies
         run: |
           brew update
           brew install glib pixman pkg-config
@@ -101,7 +101,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup MSYS2 and install deps
+      - name: Setup MSYS2 and install dependencies
         uses: msys2/setup-msys2@v2
         with:
           update: true
@@ -111,6 +111,7 @@ jobs:
             mingw-w64-x86_64-glib2
             mingw-w64-x86_64-pixman
             mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-ninja
 
       - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}

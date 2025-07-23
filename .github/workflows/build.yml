@@ -134,7 +134,7 @@ jobs:
       - name: Bundle all runtime DLLs
         shell: msys2 {0}
         run: |
-          ./msys2-bundledlls/bundledlls.sh \
+          ./bundledlls.sh \
             build-windows-x86/install/qemu-system-aarch64.exe \
             build-windows-x86/install/
 

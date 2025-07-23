@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-linux-x86:
-    name: Build ARM32 QEMU on x86_64 Linux
+    name: Build ARM64 QEMU on x86_64 Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,19 +26,19 @@ jobs:
           mkdir -p build-linux-x86
           cd build-linux-x86
           ../configure \
-            --target-list=arm-softmmu \
+            --target-list=aarch64-softmmu \
             --prefix=$PWD/install
           make -j$(nproc)
           make install
 
-      - name: Upload ARM32 build for x86_64
+      - name: Upload ARM64 build for x86_64
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-linux-x86_arm32
+          name: qemu-linux-x86_arm64
           path: build-linux-x86/install/**
 
   build-linux-arm64:
-    name: Build ARM32 QEMU on ARM64 Linux
+    name: Build ARM64 QEMU on ARM64 Linux
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v3
@@ -56,19 +56,19 @@ jobs:
           mkdir -p build-linux-arm64
           cd build-linux-arm64
           ../configure \
-            --target-list=arm-softmmu \
+            --target-list=aarch64-softmmu \
             --prefix=$PWD/install
           make -j$(nproc)
           make install
 
-      - name: Upload ARM32 build for ARM64
+      - name: Upload ARM64 build for ARM64
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-linux-arm64_arm32
+          name: qemu-linux-arm64_arm64
           path: build-linux-arm64/install/**
 
-  build-macos-arm:
-    name: Build ARM32 QEMU on macOS
+  build-macos-arm64:
+    name: Build ARM64 QEMU on macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -80,23 +80,23 @@ jobs:
 
       - name: Out‑of‑tree Configure & Build
         run: |
-          rm -rf build-macos-arm
-          mkdir -p build-macos-arm
-          cd build-macos-arm
+          rm -rf build-macos-arm64
+          mkdir -p build-macos-arm64
+          cd build-macos-arm64
           ../configure \
-            --target-list=arm-softmmu \
+            --target-list=aarch64-softmmu \
             --prefix=$PWD/install
           make -j$(sysctl -n hw.logicalcpu)
           make install
 
-      - name: Upload ARM32 build for macOS
+      - name: Upload ARM64 build for macOS
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-macos-arm32
-          path: build-macos-arm/install/**
+          name: qemu-macos-arm64
+          path: build-macos-arm64/install/**
 
-  build-windows-arm:
-    name: Build ARM32 QEMU on Windows
+  build-windows-x86:
+    name: Build ARM64 QEMU on Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
@@ -117,28 +117,28 @@ jobs:
       - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}
         run: |
-          rm -rf build-windows-arm
-          mkdir -p build-windows-arm
-          cd build-windows-arm
+          rm -rf build-windows-x86
+          mkdir -p build-windows-x86
+          cd build-windows-x86
           ../configure \
-            --target-list=arm-softmmu \
+            --target-list=aarch64-softmmu \
             --prefix=$PWD/install
           make -j$(nproc)
           make install
 
-      - name: Upload ARM32 build for Windows
+      - name: Upload ARM64 build for Windows
         uses: actions/upload-artifact@v4
         with:
-          name: qemu-windows-arm32
-          path: build-windows-arm/install/**
+          name: qemu-windows-x86
+          path: build-windows-x86/install/**
 
   release:
     name: Create Release & Upload Binaries
     needs:
       - build-linux-x86
       - build-linux-arm64
-      - build-macos-arm
-      - build-windows-arm
+      - build-macos-arm64
+      - build-windows-x86
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub Release
@@ -159,7 +159,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           asset_path: |
-            artifacts/qemu-linux-x86_arm32/**
-            artifacts/qemu-linux-arm64_arm32/**
-            artifacts/qemu-macos-arm32/**
-            artifacts/qemu-windows-arm32/**
+            artifacts/qemu-linux-x86_arm64/**
+            artifacts/qemu-linux-arm64_arm64/**
+            artifacts/qemu-macos-arm64/**
+            artifacts/qemu-windows-x86/**

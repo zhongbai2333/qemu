@@ -132,6 +132,7 @@ jobs:
       - name: Bundle Windows DLL dependencies
         shell: msys2 {0}
         run: |
+          cd build-windows-x86
           cp /mingw64/bin/libiconv-2.dll install/bin/
           cp /mingw64/bin/libncursesw6.dll install/bin/
           cp /mingw64/bin/libbz2-1.dll install/bin/

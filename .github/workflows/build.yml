@@ -113,6 +113,9 @@ jobs:
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-ninja
             git
+            mingw-w64-x86_64-libiconv
+            mingw-w64-x86_64-ncurses
+            mingw-w64-x86_64-bzip2
 
       - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}
@@ -125,6 +128,13 @@ jobs:
             --prefix=$PWD/install
           make -j$(nproc)
           make install
+
+      - name: Bundle Windows DLL dependencies
+        shell: msys2 {0}
+        run: |
+          cp /mingw64/bin/libiconv-2.dll install/bin/
+          cp /mingw64/bin/libncursesw6.dll install/bin/
+          cp /mingw64/bin/libbz2-1.dll install/bin/
 
       - name: Upload ARM64 build for Windows
         uses: actions/upload-artifact@v4

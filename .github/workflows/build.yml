@@ -133,6 +133,7 @@ jobs:
           path: build-windows-x86/install/**
 
   release:
+    if: github.ref_type == 'tag'
     name: Create Release & Upload Binaries
     needs:
       - build-linux-x86
@@ -142,7 +143,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub Release
-        if: github.ref_type == 'tag'
         id: create_release
         uses: softprops/action-gh-release@v1
         with:

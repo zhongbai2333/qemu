@@ -116,6 +116,7 @@ jobs:
             mingw-w64-x86_64-libiconv
             mingw-w64-x86_64-ncurses
             mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-gettext-runtime
 
       - name: Out‑of‑tree Configure & Build (Windows)
         shell: msys2 {0}
@@ -133,15 +134,18 @@ jobs:
         shell: msys2 {0}
         working-directory: build-windows-x86
         run: |
-          cp /mingw64/bin/libiconv-2.dll install/
+          cp /mingw64/bin/libiconv-2.dll   install/
           cp /mingw64/bin/libncursesw6.dll install/
-          cp /mingw64/bin/libbz2-1.dll install/
+          cp /mingw64/bin/libbz2-1.dll     install/
+          cp /mingw64/bin/libintl-8.dll    install/
+          cp /mingw64/bin/libgio-2.0-0.dll install/
 
       - name: Upload ARM64 build for Windows
         uses: actions/upload-artifact@v4
         with:
           name: qemu-windows-x86_arm64
           path: build-windows-x86/install/**
+
 
   release:
     if: github.ref_type == 'tag'

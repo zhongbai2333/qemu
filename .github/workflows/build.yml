@@ -118,27 +118,25 @@ jobs:
             mingw-w64-x86_64-bzip2
             mingw-w64-x86_64-gettext-runtime
 
-      - name: Out‑of‑tree Configure & Build (Windows)
+      - name: Configure & Build (Windows)
         shell: msys2 {0}
         run: |
           rm -rf build-windows-x86
-          mkdir -p build-windows-x86
-          cd build-windows-x86
-          ../configure \
-            --target-list=aarch64-softmmu \
-            --prefix=$PWD/install
+          mkdir build-windows-x86 && cd build-windows-x86
+          ../configure --target-list=aarch64-softmmu --prefix=$PWD/install
           make -j$(nproc)
           make install
 
-      - name: Bundle Windows DLL dependencies
+      - name: Clone msys2‑bundledlls helper
         shell: msys2 {0}
-        working-directory: build-windows-x86
+        run: git clone https://github.com/rollerozxa/msys2-bundledlls.git  
+
+      - name: Bundle all runtime DLLs
+        shell: msys2 {0}
         run: |
-          cp /mingw64/bin/libiconv-2.dll   install/
-          cp /mingw64/bin/libncursesw6.dll install/
-          cp /mingw64/bin/libbz2-1.dll     install/
-          cp /mingw64/bin/libintl-8.dll    install/
-          cp /mingw64/bin/libgio-2.0-0.dll install/
+          ./msys2-bundledlls/bundledlls.sh \
+            build-windows-x86/install/qemu-system-aarch64.exe \
+            build-windows-x86/install/
 
       - name: Upload ARM64 build for Windows
         uses: actions/upload-artifact@v4

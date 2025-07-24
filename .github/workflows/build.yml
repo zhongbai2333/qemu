@@ -31,7 +31,6 @@ jobs:
           mkdir -p build-linux-x86 && cd build-linux-x86
           ../configure \
             --target-list=aarch64-softmmu \
-            --enable-slirp=system \
             --prefix=$(pwd)/install
           make -j$(nproc)
           make install
@@ -62,7 +61,6 @@ jobs:
           mkdir -p build-linux-arm64 && cd build-linux-arm64
           ../configure \
             --target-list=aarch64-softmmu \
-            --enable-slirp=system \
             --prefix=$(pwd)/install
           make -j$(nproc)
           make install
@@ -90,7 +88,6 @@ jobs:
           mkdir -p build-macos-arm64 && cd build-macos-arm64
           ../configure \
             --target-list=aarch64-softmmu \
-            --enable-slirp=system \
             --prefix=$(pwd)/install
           make -j$(sysctl -n hw.logicalcpu)
           make install
@@ -132,7 +129,6 @@ jobs:
           mkdir build-windows-x86 && cd build-windows-x86
           ../configure \
             --target-list=aarch64-softmmu \
-            --enable-slirp=system \
             --prefix=$(pwd)/install
           make -j$(nproc)
           make install

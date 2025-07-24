@@ -1,0 +1,183 @@
+name: Build & Release QEMU
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-linux-x86:
+    name: Build x86_64 QEMU on x86_64 Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies (Ubuntu x86_64)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git gcc make pkg-config \
+            libglib2.0-dev libpixman-1-dev \
+            libslirp-dev
+
+      - name: Out‑of‑tree Configure & Build
+        run: |
+          rm -rf build-linux-x86
+          mkdir -p build-linux-x86 && cd build-linux-x86
+          ../configure \
+            --target-list=x86_64-softmmu \
+            --prefix=$(pwd)/install
+          make -j$(nproc)
+          make install
+
+      - name: Upload x86_64 build for x86_64 Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-linux-x86_x86_64
+          path: build-linux-x86/install/**
+
+  build-linux-arm64:
+    name: Build x86_64 QEMU on ARM64 Linux
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies (Ubuntu ARM64)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git gcc make pkg-config \
+            libglib2.0-dev libpixman-1-dev \
+            libslirp-dev
+
+      - name: Out‑of‑tree Configure & Build
+        run: |
+          rm -rf build-linux-arm64
+          mkdir -p build-linux-arm64 && cd build-linux-arm64
+          ../configure \
+            --target-list=x86_64-softmmu \
+            --prefix=$(pwd)/install
+          make -j$(nproc)
+          make install
+
+      - name: Upload x86_64 build for ARM64 Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-linux-arm64_x86_64
+          path: build-linux-arm64/install/**
+
+  build-macos:
+    name: Build x86_64 QEMU on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Homebrew dependencies
+        run: |
+          brew update
+          brew install pixman pkg-config libslirp
+
+      - name: Out‑of‑tree Configure & Build
+        run: |
+          rm -rf build-macos
+          mkdir -p build-macos && cd build-macos
+          ../configure \
+            --target-list=x86_64-softmmu \
+            --prefix=$(pwd)/install
+          make -j$(sysctl -n hw.logicalcpu)
+          make install
+
+      - name: Upload x86_64 build for macOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-macos_x86_64
+          path: build-macos/install/**
+
+  build-windows-x86:
+    name: Build x86_64 QEMU on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup MSYS2 and install dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >
+            base-devel
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-glib2
+            mingw-w64-x86_64-pixman
+            mingw-w64-x86_64-pkg-config
+            mingw-w64-x86_64-ninja
+            git
+            mingw-w64-x86_64-libiconv
+            mingw-w64-x86_64-ncurses
+            mingw-w64-x86_64-bzip2
+            mingw-w64-x86_64-gettext-runtime
+            mingw-w64-x86_64-libslirp
+
+      - name: Configure & Build (Windows)
+        shell: msys2 {0}
+        run: |
+          rm -rf build-windows-x86
+          mkdir build-windows-x86 && cd build-windows-x86
+          ../configure \
+            --target-list=x86_64-softmmu \
+            --prefix=$(pwd)/install
+          make -j$(nproc)
+          make install
+
+      - name: Clone msys2-bundledlls helper
+        shell: msys2 {0}
+        run: git clone https://github.com/rollerozxa/msys2-bundledlls.git
+
+      - name: Bundle all runtime DLLs
+        shell: msys2 {0}
+        run: |
+          ./msys2-bundledlls/bundledlls \
+            build-windows-x86/install/qemu-system-x86_64.exe \
+            build-windows-x86/install/
+
+      - name: Upload x86_64 build for Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-windows-x86_x86_64
+          path: build-windows-x86/install/**
+
+  release:
+    if: github.ref_type == 'tag'
+    name: Create Release & Upload Binaries
+    needs:
+      - build-linux-x86
+      - build-linux-arm64
+      - build-macos
+      - build-windows-x86
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: QEMU Release ${{ github.ref_name }}
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Upload all builds to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          asset_path: |
+            artifacts/qemu-linux-x86_x86_64/**
+            artifacts/qemu-linux-arm64_x86_64/**
+            artifacts/qemu-macos_x86_64/**
+            artifacts/qemu-windows-x86_x86_64/**

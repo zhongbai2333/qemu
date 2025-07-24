@@ -6,6 +6,10 @@ on:
       - 'v*.*.*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-linux-x86:
     name: Build ARM64 QEMU on x86_64 Linux
@@ -18,16 +22,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             git gcc make pkg-config \
-            libglib2.0-dev libpixman-1-dev
+            libglib2.0-dev libpixman-1-dev \
+            libslirp-dev
 
       - name: Out‑of‑tree Configure & Build
         run: |
           rm -rf build-linux-x86
-          mkdir -p build-linux-x86
-          cd build-linux-x86
+          mkdir -p build-linux-x86 && cd build-linux-x86
           ../configure \
             --target-list=aarch64-softmmu \
-            --prefix=$PWD/install
+            --enable-slirp=system \
+            --prefix=$(pwd)/install
           make -j$(nproc)
           make install
 
@@ -48,16 +53,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             git gcc make pkg-config \
-            libglib2.0-dev libpixman-1-dev
+            libglib2.0-dev libpixman-1-dev \
+            libslirp-dev
 
       - name: Out‑of‑tree Configure & Build
         run: |
           rm -rf build-linux-arm64
-          mkdir -p build-linux-arm64
-          cd build-linux-arm64
+          mkdir -p build-linux-arm64 && cd build-linux-arm64
           ../configure \
             --target-list=aarch64-softmmu \
-            --prefix=$PWD/install
+            --enable-slirp=system \
+            --prefix=$(pwd)/install
           make -j$(nproc)
           make install
 
@@ -76,16 +82,16 @@ jobs:
       - name: Install Homebrew dependencies
         run: |
           brew update
-          brew install pixman
+          brew install pixman pkg-config libslirp
 
       - name: Out‑of‑tree Configure & Build
         run: |
           rm -rf build-macos-arm64
-          mkdir -p build-macos-arm64
-          cd build-macos-arm64
+          mkdir -p build-macos-arm64 && cd build-macos-arm64
           ../configure \
             --target-list=aarch64-softmmu \
-            --prefix=$PWD/install
+            --enable-slirp=system \
+            --prefix=$(pwd)/install
           make -j$(sysctl -n hw.logicalcpu)
           make install
 
@@ -117,19 +123,23 @@ jobs:
             mingw-w64-x86_64-ncurses
             mingw-w64-x86_64-bzip2
             mingw-w64-x86_64-gettext-runtime
+            mingw-w64-x86_64-libslirp
 
       - name: Configure & Build (Windows)
         shell: msys2 {0}
         run: |
           rm -rf build-windows-x86
           mkdir build-windows-x86 && cd build-windows-x86
-          ../configure --target-list=aarch64-softmmu --prefix=$PWD/install
+          ../configure \
+            --target-list=aarch64-softmmu \
+            --enable-slirp=system \
+            --prefix=$(pwd)/install
           make -j$(nproc)
           make install
 
-      - name: Clone msys2‑bundledlls helper
+      - name: Clone msys2-bundledlls helper
         shell: msys2 {0}
-        run: git clone https://github.com/rollerozxa/msys2-bundledlls.git  
+        run: git clone https://github.com/rollerozxa/msys2-bundledlls.git
 
       - name: Bundle all runtime DLLs
         shell: msys2 {0}
@@ -143,7 +153,6 @@ jobs:
         with:
           name: qemu-windows-x86_arm64
           path: build-windows-x86/install/**
-
 
   release:
     if: github.ref_type == 'tag'
@@ -160,7 +169,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
-          name: QEMU Release ${{ github.ref }}
+          name: QEMU Release ${{ github.ref_name }}
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
@@ -170,9 +179,9 @@ jobs:
       - name: Upload all builds to Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
           asset_path: |
             artifacts/qemu-linux-x86_arm64/**
             artifacts/qemu-linux-arm64_arm64/**
-            artifacts/qemu-macos-arm64/**
-            artifacts/qemu-windows-x86/**
+            artifacts/qemu-macos-arm64_arm64/**
+            artifacts/qemu-windows-x86_arm64/**
